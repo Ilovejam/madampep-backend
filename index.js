@@ -1,12 +1,12 @@
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// API anahtarınız
 const API_KEY = process.env.OPENAI_API_KEY;
 
 const systemMessage = {
@@ -53,11 +53,11 @@ app.post('/message', async (req, res) => {
     const reply = response.data.choices[0].message.content;
     console.log('AI response:', reply);
 
-    lastAIResponse = reply;
+    lastAIResponse = reply; // AI yanıtını saklayın
 
     res.json({ message: reply });
   } catch (error) {
-    console.error('Error sending chat request:', error.message);
+    console.error('Error sending chat request:', error);
     res.status(500).json({ error: 'An error occurred while sending chat request' });
   }
 });
