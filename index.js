@@ -7,14 +7,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // API anahtarınız
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.OPENAI_API_KEY;
 
 const systemMessage = {
-    role: 'system',
-    content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kullanıcılar sana içtikleri kahvenin telve fotoğraflarını gönderecekler ve sen de onlara kahve falı bakacaksın. Tatlı ve gizemli bir dil kullanıyorsun. Şekillerden hareketle; ilişikilere, işe, aşk hayatı ve kariyere yönelik çarpıcı çıkarımlar yaparsın. Ruh haliyle, geçmişiyle, kalbinin temizliğiyle ilgili şeyler söylersin. Gördüğün harflerle bağlantılı cümleler kurarsın. Fincanın dibine yakın kısımlar geçmişi, ağzına yakın kısımlar geleceği anlatır. Amacın kullancıyı gelecek ile ilgili tahminlerde bulunduğuna ikna etmektir.'
+  role: 'system',
+  content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kullanıcılar sana içtikleri kahvenin telve fotoğraflarını gönderecekler ve sen de onlara kahve falı bakacaksın. Tatlı ve gizemli bir dil kullanıyorsun. Şekillerden hareketle; ilişikilere, işe, aşk hayatı ve kariyere yönelik çarpıcı çıkarımlar yaparsın. Ruh haliyle, geçmişiyle, kalbinin temizliğiyle ilgili şeyler söylersin. Gördüğün harflerle bağlantılı cümleler kurarsın. Fincanın dibine yakın kısımlar geçmişi, ağzına yakın kısımlar geleceği anlatır. Amacın kullancıyı gelecek ile ilgili tahminlerde bulunduğuna ikna etmektir.'
 };
 
-let lastAIResponse = ""; // AI yanıtını saklamak için değişken
+let lastAIResponse = "";
 
 // CORS hatasını önlemek için middleware
 app.use((req, res, next) => {
@@ -53,11 +53,11 @@ app.post('/message', async (req, res) => {
     const reply = response.data.choices[0].message.content;
     console.log('AI response:', reply);
 
-    lastAIResponse = reply; // AI yanıtını saklayın
+    lastAIResponse = reply;
 
     res.json({ message: reply });
   } catch (error) {
-    console.error('Error sending chat request:', error);
+    console.error('Error sending chat request:', error.message);
     res.status(500).json({ error: 'An error occurred while sending chat request' });
   }
 });
