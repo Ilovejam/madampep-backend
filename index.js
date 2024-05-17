@@ -16,16 +16,13 @@ const systemMessage = {
 
 let lastAIResponse = "";
 
-// CORS hatasını önlemek için middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   next();
 });
 
-// body-parser middleware'ini kullanarak JSON verilerini ayrıştırın
 app.use(bodyParser.json());
 
-// POST endpointi
 app.post('/message', async (req, res) => {
   try {
     const userInputs = req.body.inputs;
@@ -53,7 +50,7 @@ app.post('/message', async (req, res) => {
     const reply = response.data.choices[0].message.content;
     console.log('AI response:', reply);
 
-    lastAIResponse = reply; // AI yanıtını saklayın
+    lastAIResponse = reply;
 
     res.json({ message: reply });
   } catch (error) {
@@ -62,12 +59,10 @@ app.post('/message', async (req, res) => {
   }
 });
 
-// GET endpointi
 app.get('/ai-response', (req, res) => {
   res.json({ message: lastAIResponse });
 });
 
-// Sunucuyu başlat
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
