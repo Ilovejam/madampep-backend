@@ -39,7 +39,6 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 
 app.post('/message', async (req, res) => {
-    const start = Date.now();
     try {
         const userInputs = req.body.inputs;
         console.log('Received user inputs:', userInputs);
@@ -69,13 +68,6 @@ app.post('/message', async (req, res) => {
                 },
             }
         );
-
-        // Eğer cevap çok hızlı geldiyse, toplamda 60 saniye beklemek için bir gecikme ekleyin
-        const elapsed = Date.now() - start;
-        const remainingTime = 60000 - elapsed;
-        if (remainingTime > 0) {
-            await new Promise(resolve => setTimeout(resolve, remainingTime));
-        }
 
         const reply = response.data.choices[0].message.content;
         console.log('AI response:', reply);
