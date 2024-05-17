@@ -1,14 +1,15 @@
 {
-  "name": "madampep-backend",
+  "name": "your-project-name",
   "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "axios": "^1.6.8",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "body-parser": "^1.19.2"
-  },
+  "description": "Your project description",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1"
   }
 }

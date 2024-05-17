@@ -38,7 +38,7 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 
-app.post('/message', async (req, res) => {
+app.post('/api/message', async (req, res) => {
     try {
         const userInputs = req.body.inputs;
         console.log('Received user inputs:', userInputs);
@@ -81,7 +81,7 @@ app.post('/message', async (req, res) => {
     }
 });
 
-app.get('/ai-response', (req, res) => {
+app.get('/api/ai-response', (req, res) => {
     res.json({ message: lastAIResponse });
 });
 
