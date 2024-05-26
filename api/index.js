@@ -123,7 +123,6 @@ app.post('/api/upload', upload.array('images', 3), async (req, res) => {
     }
 });
 
-
 app.get('/api/ai-response', (req, res) => {
     res.json({ message: lastAIResponse });
 });
