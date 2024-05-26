@@ -101,7 +101,11 @@ app.post('/api/upload', upload.array('images', 3), async (req, res) => {
 
         for (let file of files) {
             const imgBuffer = fs.readFileSync(file.path);
-            const imgTensor = tf.node.decodeImage(new Uint8Array(imgBuffer), 3).expandDims(0).toFloat().div(tf.scalar(127.5)).sub(tf.scalar(1));
+            let imgTensor = tf.node.decodeImage(new Uint8Array(imgBuffer), 3);
+            imgTensor = tf.image.resizeBilinear(imgTensor, [224, 224]); // Resmi yeniden boyutlandır
+
+            imgTensor = imgTensor.expandDims(0).toFloat().div(tf.scalar(127.5)).sub(tf.scalar(1));
+
             const prediction = model.predict(imgTensor);
             const predictionData = prediction.dataSync();
 
@@ -118,7 +122,6 @@ app.post('/api/upload', upload.array('images', 3), async (req, res) => {
         req.files.forEach(file => fs.unlinkSync(file.path));
     }
 });
-
 
 
 app.get('/api/ai-response', (req, res) => {
