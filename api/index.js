@@ -1,14 +1,12 @@
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
-const multer = require('multer');
-const tf = require('@tensorflow/tfjs-node');
-const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.OPENAI_API_KEY;
+
 const systemMessage = {
     role: 'system',
     content: 'Senin adÄ±n MadamPep ve sen bir kahve falcÄ±sÄ±sÄ±n. KullanÄ±cÄ±lar sana iÃ§tikleri kahvenin telve fotoÄraflarÄ±nÄ± gÃ¶nderecekler ve sen de onlara kahve falÄ± bakacaksÄ±n. TatlÄ± ve gizemli bir dil kullanÄ±yorsun. Åekillerden hareketle; iliÅikilere, iÅe, aÅk hayatÄ± ve kariyere yÃ¶nelik Ã§arpÄ±cÄ± Ã§Ä±karÄ±mlar yaparsÄ±n. Ruh haliyle, geÃ§miÅiyle, kalbinin temizliÄiyle ilgili Åeyler sÃ¶ylersin. GÃ¶rdÃ¼ÄÃ¼n harflerle baÄlantÄ±lÄ± cÃ¼mleler kurarsÄ±n. FincanÄ±n dibine yakÄ±n kÄ±sÄ±mlar geÃ§miÅi, aÄzÄ±na yakÄ±n kÄ±sÄ±mlar geleceÄi anlatÄ±r. AmacÄ±n kullancÄ±yÄ± gelecek ile ilgili tahminlerde bulunduÄuna ikna etmektir. KullanÄ±cÄ±nÄ±n burcunu doÄum tarihine gÃ¶re belirle ve yorumlarÄ±nda burcunu dikkate alarak konuÅ.'
@@ -40,20 +38,6 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 
-<<<<<<< HEAD
-const upload = multer({ dest: 'uploads/' });
-
-let model;
-async function loadModel() {
-    model = await tf.loadLayersModel('file://tm-my-image-model/model.json');
-}
-
-loadModel().then(() => {
-    console.log("Model loaded successfully");
-});
-
-=======
->>>>>>> restore-e9c2047
 app.post('/api/message', async (req, res) => {
     try {
         const userInputs = req.body.inputs;
@@ -97,39 +81,6 @@ app.post('/api/message', async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-app.post('/api/upload', upload.array('images', 3), async (req, res) => {
-    try {
-        const files = req.files;
-        let predictions = [];
-
-        for (let file of files) {
-            const imgBuffer = fs.readFileSync(file.path);
-            let imgTensor = tf.node.decodeImage(new Uint8Array(imgBuffer), 3);
-            imgTensor = tf.image.resizeBilinear(imgTensor, [224, 224]); // Resmi yeniden boyutlandÄ±r
-
-            imgTensor = imgTensor.expandDims(0).toFloat().div(tf.scalar(127.5)).sub(tf.scalar(1));
-
-            const prediction = model.predict(imgTensor);
-            const predictionData = prediction.dataSync();
-
-            const isCoffeeCup = predictionData[0] > 0.8; // Adjust this threshold as necessary
-            predictions.push({ file: file.originalname, isCoffeeCup });
-        }
-
-        res.json({ predictions });
-    } catch (error) {
-        console.error('Error during image processing:', error);
-        res.status(500).json({ error: 'An error occurred while processing images' });
-    } finally {
-        // Clean up uploaded files
-        req.files.forEach(file => fs.unlinkSync(file.path));
-    }
-});
-
-
-=======
->>>>>>> restore-e9c2047
 app.get('/api/ai-response', (req, res) => {
     res.json({ message: lastAIResponse });
 });
