@@ -9,22 +9,22 @@ const API_KEY = process.env.OPENAI_API_KEY;
 
 const systemMessage = {
     role: 'system',
-    content: 'Senin adÄ±n MadamPep ve sen bir kahve falcÄ±sÄ±sÄ±n. KullanÄ±cÄ±lar sana iÃ§tikleri kahvenin telve fotoÄraflarÄ±nÄ± gÃ¶nderecekler ve sen de onlara kahve falÄ± bakacaksÄ±n. TatlÄ± ve gizemli bir dil kullanÄ±yorsun. Åekillerden hareketle; iliÅikilere, iÅe, aÅk hayatÄ± ve kariyere yÃ¶nelik Ã§arpÄ±cÄ± Ã§Ä±karÄ±mlar yaparsÄ±n. Ruh haliyle, geÃ§miÅiyle, kalbinin temizliÄiyle ilgili Åeyler sÃ¶ylersin. GÃ¶rdÃ¼ÄÃ¼n harflerle baÄlantÄ±lÄ± cÃ¼mleler kurarsÄ±n. FincanÄ±n dibine yakÄ±n kÄ±sÄ±mlar geÃ§miÅi, aÄzÄ±na yakÄ±n kÄ±sÄ±mlar geleceÄi anlatÄ±r. AmacÄ±n kullancÄ±yÄ± gelecek ile ilgili tahminlerde bulunduÄuna ikna etmektir. KullanÄ±cÄ±nÄ±n burcunu doÄum tarihine gÃ¶re belirle ve yorumlarÄ±nda burcunu dikkate alarak konuÅ.'
+    content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kullanıcılar sana içtikleri kahvenin telve fotoğraflarını gönderecekler ve sen de onlara kahve falı bakacaksın. Tatlı ve gizemli bir dil kullanıyorsun. Şekillerden hareketle; ilişkilere, işe, aşk hayatı ve kariyere yönelik çarpıcı çıkarımlar yaparsın. Ruh haliyle, geçmişiyle, kalbinin temizliğiyle ilgili şeyler söylersin. Gördüğün harflerle bağlantılı cümleler kurarsın. Fincanın dibine yakın kısımlar geçmişi, ağzına yakın kısımlar geleceği anlatır. Amacın kullancını gelecekle ilgili tahminlerde bulunduğuna ikna etmektir. Kullanıcının burcunu doğum tarihine göre belirle ve yorumlarında burcunu dikkate alarak konuş. Kısa ve net cevaplar ver.'
 };
 
 let lastAIResponse = "";
 
-// BurÃ§larÄ± belirlemek iÃ§in fonksiyon
+// Burçları belirlemek için fonksiyon
 function getZodiacSign(day, month) {
-    if ((month == 1 && day <= 20) || (month == 12 && day >= 22)) return 'OÄlak';
+    if ((month == 1 && day <= 20) || (month == 12 && day >= 22)) return 'Oğlak';
     if ((month == 1 && day >= 21) || (month == 2 && day <= 18)) return 'Kova';
-    if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) return 'BalÄ±k';
-    if ((month == 3 && day >= 21) || (month == 4 && day <= 20)) return 'KoÃ§';
-    if ((month == 4 && day >= 21) || (month == 5 && day <= 20)) return 'BoÄa';
-    if ((month == 5 && day >= 21) || (month == 6 && day <= 21)) return 'Ä°kizler';
-    if ((month == 6 && day >= 22) || (month == 7 && day <= 22)) return 'YengeÃ§';
+    if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) return 'Balık';
+    if ((month == 3 && day >= 21) || (month == 4 && day <= 20)) return 'Koç';
+    if ((month == 4 && day >= 21) || (month == 5 && day <= 20)) return 'Boğa';
+    if ((month == 5 && day >= 21) || (month == 6 && day <= 21)) return 'İkizler';
+    if ((month == 6 && day >= 22) || (month == 7 && day <= 22)) return 'Yengeç';
     if ((month == 7 && day >= 23) || (month == 8 && day <= 23)) return 'Aslan';
-    if ((month == 8 && day >= 24) || (month == 9 && day <= 23)) return 'BaÅak';
+    if ((month == 8 && day >= 24) || (month == 9 && day <= 23)) return 'Başak';
     if ((month == 9 && day >= 24) || (month == 10 && day <= 23)) return 'Terazi';
     if ((month == 10 && day >= 24) || (month == 11 && day <= 22)) return 'Akrep';
     if ((month == 11 && day >= 23) || (month == 12 && day <= 21)) return 'Yay';
@@ -43,14 +43,14 @@ app.post('/api/message', async (req, res) => {
         const userInputs = req.body.inputs;
         console.log('Received user inputs:', userInputs);
 
-        const birthDateInput = userInputs.find(input => input.question === 'DoÄum Tarihi');
+        const birthDateInput = userInputs.find(input => input.question === 'Doğum Tarihi');
         let userZodiac = '';
         if (birthDateInput) {
             const [month, day] = birthDateInput.answer.split('/').map(Number);
             userZodiac = getZodiacSign(day, month);
         }
 
-        const userMessageContent = userInputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurÃ§: ${userZodiac}`;
+        const userMessageContent = userInputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
 
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
@@ -73,6 +73,40 @@ app.post('/api/message', async (req, res) => {
         console.log('AI response:', reply);
 
         lastAIResponse = reply;
+
+        res.json({ message: reply });
+    } catch (error) {
+        console.error('Error sending chat request:', error);
+        res.status(500).json({ error: 'An error occurred while sending chat request' });
+    }
+});
+
+app.post('/api/short-message', async (req, res) => {
+    try {
+        const userInputs = req.body.inputs;
+        console.log('Received user inputs:', userInputs);
+
+        const userMessageContent = userInputs.map(input => `${input.question}: ${input.answer}`).join('\n');
+
+        const response = await axios.post(
+            'https://api.openai.com/v1/chat/completions',
+            {
+                model: 'gpt-4-turbo',
+                messages: [
+                    systemMessage,
+                    { role: 'user', content: userMessageContent },
+                ],
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`,
+                },
+            }
+        );
+
+        const reply = response.data.choices[0].message.content;
+        console.log('AI response:', reply);
 
         res.json({ message: reply });
     } catch (error) {
