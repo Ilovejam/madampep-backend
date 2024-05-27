@@ -40,6 +40,7 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 
+<<<<<<< HEAD
 const upload = multer({ dest: 'uploads/' });
 
 let model;
@@ -51,6 +52,8 @@ loadModel().then(() => {
     console.log("Model loaded successfully");
 });
 
+=======
+>>>>>>> restore-e9c2047
 app.post('/api/message', async (req, res) => {
     try {
         const userInputs = req.body.inputs;
@@ -94,6 +97,7 @@ app.post('/api/message', async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 app.post('/api/upload', upload.array('images', 3), async (req, res) => {
     try {
         const files = req.files;
@@ -124,6 +128,8 @@ app.post('/api/upload', upload.array('images', 3), async (req, res) => {
 });
 
 
+=======
+>>>>>>> restore-e9c2047
 app.get('/api/ai-response', (req, res) => {
     res.json({ message: lastAIResponse });
 });

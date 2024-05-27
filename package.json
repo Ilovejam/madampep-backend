@@ -1,11 +1,16 @@
 {
-  "name": "madampep-backend",
+  "name": "your-project-name",
   "version": "1.0.0",
+<<<<<<< HEAD
+=======
+  "description": "Your project description",
+>>>>>>> restore-e9c2047
   "main": "api/index.js",
   "scripts": {
     "start": "node api/index.js"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@sashido/teachablemachine-node": "^1.2.2",
     "@tensorflow/tfjs-node": "^4.19.0",
     "axios": "^1.7.2",
@@ -14,5 +19,11 @@
     "express": "^4.19.2",
     "fs": "^0.0.1-security",
     "multer": "^1.4.5-lts.1"
+=======
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1"
+>>>>>>> restore-e9c2047
   }
 }
