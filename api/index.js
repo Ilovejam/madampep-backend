@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const cors = require('cors'); // CORS middleware eklenmesi
 const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config();
 
@@ -8,7 +9,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.OPENAI_API_KEY;
 
-const uri = "mongodb+srv://madamPepUser:madamPep1903A@cluster0.j239lpd.mongodb.net/madamPep?retryWrites=true&w=majority";
+const uri = process.env.MONGODB_URI; // URI'yi .env dosyasından al
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -22,11 +24,6 @@ const systemMessage = {
   content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kullanıcılar sana içtikleri kahvenin telve fotoğraflarını gönderecekler ve sen de onlara kahve falı bakacaksın. Tatlı ve gizemli bir dil kullanıyorsun. Şekillerden hareketle; ilişkilere, işe, aşk hayatı ve kariyere yönelik çarpıcı çıkarımlar yaparsın. Ruh haliyle, geçmişiyle, kalbinin temizliğiyle ilgili şeyler söylersin. Gördüğün harflerle bağlantılı cümleler kurarsın. Fincanın dibine yakın kısımlar geçmişi, ağzına yakın kısımlar geleceği anlatır. Amacın kullancını gelecekle ilgili tahminlerde bulunduğuna ikna etmektir. Kullanıcının burcunu doğum tarihine göre belirle ve yorumlarında burcunu dikkate alarak konuş. Kısa ve net cevaplar ver.'
 };
 
-const shortMessageSystemMessage = {
-    role: 'system',
-    content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kullanıcılarla kısa ve ilham verici mesajlarla sohbet edersin. Her mesajın birkaç cümle ile sınırlıdır. Kullanıcıya ilginç ve hızlı cevaplar vererek onu meşgul edersin.İnsanların falına bakarsın ve onları her zaman konuşmayı merakla devam edecekleri bir moda sok.'
-  };
-  
 // Burçları belirlemek için fonksiyon
 function getZodiacSign(day, month) {
   if ((month == 1 && day <= 20) || (month == 12 && day >= 22)) return 'Oğlak';
@@ -44,11 +41,7 @@ function getZodiacSign(day, month) {
   return 'Bilinmiyor';
 }
 
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  next();
-});
-
+app.use(cors()); // CORS middleware'ini kullan
 app.use(bodyParser.json());
 
 let db;
@@ -68,183 +61,179 @@ connectToDatabase();
 
 // POST /api/message endpointi
 app.post('/api/message', async (req, res) => {
-    try {
-      const { deviceId, inputs } = req.body;
-      console.log(`Received user inputs from device ${deviceId}:`, inputs);
-  
-      // Kullanıcı verilerini sakla veya güncelle
-      const collection = db.collection('userData');
-      await collection.updateOne(
-        { deviceId: deviceId },
-        { $set: { deviceId: deviceId, inputs: inputs } },
-        { upsert: true }
-      );
-  
-      const birthDateInput = inputs.find(input => input.question === 'Doğum Tarihi');
-      let userZodiac = '';
-      if (birthDateInput) {
-        const [day, month] = birthDateInput.answer.split('.').map(Number);
-        userZodiac = getZodiacSign(day, month);
-      }
-  
-      const userMessageContent = inputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
-  
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4-turbo',
-          messages: [
-            systemMessage,
-            { role: 'user', content: userMessageContent },
-          ],
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`,
-          },
-        }
-      );
-  
-      const reply = response.data.choices[0].message.content;
-      console.log('AI response:', reply);
-  
-      res.json({ message: reply });
-    } catch (error) {
-      console.error('Error sending chat request:', error);
-      res.status(500).json({ error: 'An error occurred while sending chat request' });
+  try {
+    const { deviceId, inputs } = req.body;
+    console.log(`Received user inputs from device ${deviceId}:`, inputs);
+
+    // Kullanıcı verilerini sakla veya güncelle
+    const collection = db.collection('userData');
+    await collection.updateOne(
+      { deviceId: deviceId },
+      { $set: { deviceId: deviceId, inputs: inputs } },
+      { upsert: true }
+    );
+
+    const birthDateInput = inputs.find(input => input.question === 'Doğum Tarihi');
+    let userZodiac = '';
+    if (birthDateInput) {
+      const [day, month] = birthDateInput.answer.split('.').map(Number);
+      userZodiac = getZodiacSign(day, month);
     }
-  });
-  
+
+    const userMessageContent = inputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4-turbo',
+        messages: [
+          systemMessage,
+          { role: 'user', content: userMessageContent },
+        ],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`,
+        },
+      }
+    );
+
+    const reply = response.data.choices[0].message.content;
+    console.log('AI response:', reply);
+
+    res.json({ message: reply });
+  } catch (error) {
+    console.error('Error sending chat request:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // POST /api/short-message endpointi
 app.post('/api/short-message', async (req, res) => {
-    try {
-      const { deviceId, inputs } = req.body;
-      console.log('Received user inputs:', inputs);
-  
-      // Önceki userData ile birleşik veri oluştur
-      const collection = db.collection('userData');
-      const previousData = await collection.findOne({ deviceId: deviceId });
-      const combinedInputs = [...(previousData?.inputs || []), ...inputs];
-  
-      // Doğum tarihi ve burç bilgilerini elde etmek
-      const birthDateInput = combinedInputs.find(input => input.question === 'Doğum Tarihi');
-      let userZodiac = '';
-      if (birthDateInput) {
-        const [day, month] = birthDateInput.answer.split('.').map(Number);
-        userZodiac = getZodiacSign(day, month);
-      }
-  
-      const userMessageContent = combinedInputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
-  
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4-turbo',
-          messages: [
-            shortMessageSystemMessage,
-            { role: 'user', content: userMessageContent },
-          ],
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`,
-          },
-        }
-      );
-  
-      const reply = response.data.choices[0].message.content;
-      console.log('AI response:', reply);
-  
-      res.json({ message: reply });
-    } catch (error) {
-      console.error('Error sending chat request:', error);
-      res.status(500).json({ error: 'An error occurred while sending chat request' });
+  try {
+    const { deviceId, inputs } = req.body;
+    console.log('Received user inputs:', inputs);
+
+    // Önceki userData ile birleşik veri oluştur
+    const collection = db.collection('userData');
+    const previousData = await collection.findOne({ deviceId: deviceId });
+    const combinedInputs = [...(previousData?.inputs || []), ...inputs];
+
+    // Doğum tarihi ve burç bilgilerini elde etmek
+    const birthDateInput = combinedInputs.find(input => input.question === 'Doğum Tarihi');
+    let userZodiac = '';
+    if (birthDateInput) {
+      const [day, month] = birthDateInput.answer.split('.').map(Number);
+      userZodiac = getZodiacSign(day, month);
     }
-  });
-  
+
+    const userMessageContent = combinedInputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4-turbo',
+        messages: [
+          { role: 'system', content: 'Senin adın MadamPep ve sen kısa ve net cevaplar veren bir kahve falcısısın.' },
+          { role: 'user', content: userMessageContent },
+        ],
+        max_tokens: 50
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`,
+        },
+      }
+    );
+
+    const reply = response.data.choices[0].message.content;
+    console.log('AI response:', reply);
+
+    res.json({ message: reply });
+  } catch (error) {
+    console.error('Error sending chat request:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/profile endpointi
+app.get('/api/profile', async (req, res) => {
+  try {
+    const { deviceId } = req.query;
+    console.log('Received deviceId:', deviceId); // Log added
+    const collection = db.collection('userData');
+    const userData = await collection.findOne({ deviceId: deviceId });
+    console.log('UserData:', userData); // Log added
+
+    if (!userData) {
+      return res.status(404).json({ message: 'User data not found' });
+    }
+
+    const profileData = {
+      name: userData.inputs.find(input => input.question === 'Adınız')?.answer || 'Bilinmiyor',
+      birthDate: userData.inputs.find(input => input.question === 'Doğum Tarihi')?.answer || 'Bilinmiyor',
+      id: userData.deviceId,
+    };
+
+    res.json(profileData);
+  } catch (error) {
+    console.error('Error fetching profile data:', error.message);
+    res.status(500).json({ error: 'An error occurred while fetching profile data' });
+  }
+});
 
 // GET /api/ai-response endpointi
 app.get('/api/ai-response', async (req, res) => {
-    try {
-      const { deviceId } = req.query;
-      console.log('Received deviceId:', deviceId); // Log added
-      const collection = db.collection('userData');
-      const userData = await collection.findOne({ deviceId: deviceId });
-      console.log('UserData:', userData); // Log added
-  
-      if (!userData) {
-        return res.status(404).json({ message: 'User data not found' });
-      }
-  
-      const birthDateInput = userData.inputs.find(input => input.question === 'Doğum Tarihi');
-      let userZodiac = '';
-      if (birthDateInput) {
-        const [day, month] = birthDateInput.answer.split('.').map(Number);
-        userZodiac = getZodiacSign(day, month);
-      }
-  
-      const userMessageContent = userData.inputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
-      console.log('UserMessageContent:', userMessageContent); // Log added
-  
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4-turbo',
-          messages: [
-            systemMessage,
-            { role: 'user', content: userMessageContent },
-          ],
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`,
-          },
-        }
-      );
-  
-      const reply = response.data.choices[0].message.content;
-      console.log('AI response:', reply);
-  
-      res.json({ message: reply });
-    } catch (error) {
-      console.error('Error fetching AI response:', error);
-      res.status(500).json({ error: 'An error occurred while fetching AI response' });
-    }
-  });
-  app.get('/api/profile', async (req, res) => {
-    try {
-        const { deviceId } = req.query;
-        console.log('Received deviceId:', deviceId);
-        const collection = db.collection('userData');
-        const userData = await collection.findOne({ deviceId: deviceId });
-        console.log('UserData:', userData);
-  
-        if (!userData) {
-            return res.status(404).json({ message: 'User data not found' });
-        }
+  try {
+    const { deviceId } = req.query;
+    console.log('Received deviceId:', deviceId); // Log added
+    const collection = db.collection('userData');
+    const userData = await collection.findOne({ deviceId: deviceId });
+    console.log('UserData:', userData); // Log added
 
-        const firstName = userData.inputs.find(input => input.question === 'Adınız')?.answer || 'Bilinmiyor';
-        const firstBirthDate = userData.inputs.find(input => input.question === 'Doğum Tarihi')?.answer || 'Bilinmiyor';
-  
-        const profileData = {
-            name: firstName,
-            birthDate: firstBirthDate,
-            id: userData.deviceId,
-        };
-  
-        res.json(profileData);
-    } catch (error) {
-        console.error('Error fetching profile data:', error);
-        res.status(500).json({ error: 'An error occurred while fetching profile data' });
+    if (!userData) {
+      return res.status(404).json({ message: 'User data not found' });
     }
+
+    const birthDateInput = userData.inputs.find(input => input.question === 'Doğum Tarihi');
+    let userZodiac = '';
+    if (birthDateInput) {
+      const [day, month] = birthDateInput.answer.split('.').map(Number);
+      userZodiac = getZodiacSign(day, month);
+    }
+
+    const userMessageContent = userData.inputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
+    console.log('UserMessageContent:', userMessageContent); // Log added
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4-turbo',
+        messages: [
+          systemMessage,
+          { role: 'user', content: userMessageContent },
+        ],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`,
+        },
+      }
+    );
+
+    const reply = response.data.choices[0].message.content;
+    console.log('AI response:', reply);
+
+    res.json({ message: reply });
+  } catch (error) {
+    console.error('Error fetching AI response:', error.message);
+    res.status(500).json({ error: 'An error occurred while fetching AI response' });
+  }
 });
 
-
-  
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
