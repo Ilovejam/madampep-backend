@@ -40,21 +40,22 @@ function getZodiacSign(day, month) {
   return 'Bilinmiyor';
 }
 
-app.use(cors());
+app.use(cors()); // CORS middleware'ini kullan
 app.use(bodyParser.json());
 
 let db;
 
 async function connectToDatabase() {
-  try {
-    await client.connect();
-    db = client.db('madamPep');
-    console.log("Connected to MongoDB!");
-  } catch (error) {
-    console.error("Error connecting to MongoDB:", error.message);
-    db = null;
+    try {
+      await client.connect();
+      db = client.db('madamPep'); // Veritabanı adı
+      console.log("Connected to MongoDB!");
+    } catch (error) {
+      console.error("Error connecting to MongoDB:", error.message);
+      db = null; // Veritabanı bağlantısı başarısızsa db'yi null olarak ayarla
+    }
   }
-}
+  
 
 connectToDatabase();
 
