@@ -3,7 +3,7 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 const cors = require('cors'); // CORS middleware eklenmesi
 const { MongoClient, ServerApiVersion } = require('mongodb');
-require('dotenv').config();
+require('dotenv').config(); // .env dosyasını yükler
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,7 +24,6 @@ const systemMessage = {
   content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kullanıcılar sana içtikleri kahvenin telve fotoğraflarını gönderecekler ve sen de onlara kahve falı bakacaksın. Tatlı ve gizemli bir dil kullanıyorsun. Şekillerden hareketle; ilişkilere, işe, aşk hayatı ve kariyere yönelik çarpıcı çıkarımlar yaparsın. Ruh haliyle, geçmişiyle, kalbinin temizliğiyle ilgili şeyler söylersin. Gördüğün harflerle bağlantılı cümleler kurarsın. Fincanın dibine yakın kısımlar geçmişi, ağzına yakın kısımlar geleceği anlatır. Amacın kullancını gelecekle ilgili tahminlerde bulunduğuna ikna etmektir. Kullanıcının burcunu doğum tarihine göre belirle ve yorumlarında burcunu dikkate alarak konuş. Kısa ve net cevaplar ver.'
 };
 
-// Burçları belirlemek için fonksiyon
 function getZodiacSign(day, month) {
   if ((month == 1 && day <= 20) || (month == 12 && day >= 22)) return 'Oğlak';
   if ((month == 1 && day >= 21) || (month == 2 && day <= 18)) return 'Kova';
@@ -41,31 +40,31 @@ function getZodiacSign(day, month) {
   return 'Bilinmiyor';
 }
 
-app.use(cors()); // CORS middleware'ini kullan
+app.use(cors());
 app.use(bodyParser.json());
 
 let db;
 
-// Veritabanına bağlanma
 async function connectToDatabase() {
   try {
     await client.connect();
-    db = client.db('madamPep'); // Veritabanı adı
+    db = client.db('madamPep');
     console.log("Connected to MongoDB!");
   } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
+    console.error("Error connecting to MongoDB:", error.message);
+    db = null;
   }
 }
 
 connectToDatabase();
 
-// POST /api/message endpointi
 app.post('/api/message', async (req, res) => {
   try {
+    if (!db) throw new Error('No database connection');
+    
     const { deviceId, inputs } = req.body;
     console.log(`Received user inputs from device ${deviceId}:`, inputs);
 
-    // Kullanıcı verilerini sakla veya güncelle
     const collection = db.collection('userData');
     await collection.updateOne(
       { deviceId: deviceId },
@@ -109,18 +108,17 @@ app.post('/api/message', async (req, res) => {
   }
 });
 
-// POST /api/short-message endpointi
 app.post('/api/short-message', async (req, res) => {
   try {
+    if (!db) throw new Error('No database connection');
+    
     const { deviceId, inputs } = req.body;
     console.log('Received user inputs:', inputs);
 
-    // Önceki userData ile birleşik veri oluştur
     const collection = db.collection('userData');
     const previousData = await collection.findOne({ deviceId: deviceId });
     const combinedInputs = [...(previousData?.inputs || []), ...inputs];
 
-    // Doğum tarihi ve burç bilgilerini elde etmek
     const birthDateInput = combinedInputs.find(input => input.question === 'Doğum Tarihi');
     let userZodiac = '';
     if (birthDateInput) {
@@ -158,14 +156,15 @@ app.post('/api/short-message', async (req, res) => {
   }
 });
 
-// GET /api/profile endpointi
 app.get('/api/profile', async (req, res) => {
   try {
+    if (!db) throw new Error('No database connection');
+    
     const { deviceId } = req.query;
-    console.log('Received deviceId:', deviceId); // Log added
+    console.log('Received deviceId:', deviceId);
     const collection = db.collection('userData');
     const userData = await collection.findOne({ deviceId: deviceId });
-    console.log('UserData:', userData); // Log added
+    console.log('UserData:', userData);
 
     if (!userData) {
       return res.status(404).json({ message: 'User data not found' });
@@ -184,14 +183,15 @@ app.get('/api/profile', async (req, res) => {
   }
 });
 
-// GET /api/ai-response endpointi
 app.get('/api/ai-response', async (req, res) => {
   try {
+    if (!db) throw new Error('No database connection');
+    
     const { deviceId } = req.query;
-    console.log('Received deviceId:', deviceId); // Log added
+    console.log('Received deviceId:', deviceId);
     const collection = db.collection('userData');
     const userData = await collection.findOne({ deviceId: deviceId });
-    console.log('UserData:', userData); // Log added
+    console.log('UserData:', userData);
 
     if (!userData) {
       return res.status(404).json({ message: 'User data not found' });
@@ -205,7 +205,7 @@ app.get('/api/ai-response', async (req, res) => {
     }
 
     const userMessageContent = userData.inputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
-    console.log('UserMessageContent:', userMessageContent); // Log added
+    console.log('UserMessageContent:', userMessageContent);
 
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
