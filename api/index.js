@@ -46,68 +46,75 @@ app.use(bodyParser.json());
 let db;
 
 async function connectToDatabase() {
-    try {
-      await client.connect();
-      db = client.db('madamPep'); // Veritabanı adı
-      console.log("Connected to MongoDB!");
-    } catch (error) {
-      console.error("Error connecting to MongoDB:", error.message);
-      db = null; // Veritabanı bağlantısı başarısızsa db'yi null olarak ayarla
-    }
+  try {
+    await client.connect();
+    db = client.db('madamPep');
+    console.log("Connected to MongoDB!");
+  } catch (error) {
+    console.error("Error connecting to MongoDB:", error.message);
+    db = null;
   }
-  
+}
+
+app.use(async (req, res, next) => {
+  if (!db) {
+    await connectToDatabase();
+  }
+  next();
+});
 
 connectToDatabase();
 
+
 app.post('/api/message', async (req, res) => {
-  try {
-    if (!db) throw new Error('No database connection');
-    
-    const { deviceId, inputs } = req.body;
-    console.log(`Received user inputs from device ${deviceId}:`, inputs);
-
-    const collection = db.collection('userData');
-    await collection.updateOne(
-      { deviceId: deviceId },
-      { $set: { deviceId: deviceId, inputs: inputs } },
-      { upsert: true }
-    );
-
-    const birthDateInput = inputs.find(input => input.question === 'Doğum Tarihi');
-    let userZodiac = '';
-    if (birthDateInput) {
-      const [day, month] = birthDateInput.answer.split('.').map(Number);
-      userZodiac = getZodiacSign(day, month);
-    }
-
-    const userMessageContent = inputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4-turbo',
-        messages: [
-          systemMessage,
-          { role: 'user', content: userMessageContent },
-        ],
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
-        },
+    try {
+      if (!db) throw new Error('No database connection');
+      
+      const { deviceId, inputs } = req.body;
+      console.log(`Received user inputs from device ${deviceId}:`, inputs);
+  
+      const collection = db.collection('userData');
+      await collection.updateOne(
+        { deviceId: deviceId },
+        { $set: { deviceId: deviceId, inputs: inputs } },
+        { upsert: true }
+      );
+  
+      const birthDateInput = inputs.find(input => input.question === 'Doğum Tarihi');
+      let userZodiac = '';
+      if (birthDateInput) {
+        const [day, month] = birthDateInput.answer.split('.').map(Number);
+        userZodiac = getZodiacSign(day, month);
       }
-    );
-
-    const reply = response.data.choices[0].message.content;
-    console.log('AI response:', reply);
-
-    res.json({ message: reply });
-  } catch (error) {
-    console.error('Error sending chat request:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
+  
+      const userMessageContent = inputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
+  
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4-turbo',
+          messages: [
+            systemMessage,
+            { role: 'user', content: userMessageContent },
+          ],
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`,
+          },
+        }
+      );
+  
+      const reply = response.data.choices[0].message.content;
+      console.log('AI response:', reply);
+  
+      res.json({ message: reply });
+    } catch (error) {
+      console.error('Error sending chat request:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
 app.post('/api/short-message', async (req, res) => {
   try {
