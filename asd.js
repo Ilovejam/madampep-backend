@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const url = 'http://localhost:3000/api/message';
+const url = 'http://madampep-backend.vercel.app/api/message';
 const data = {
   deviceId: '03155fa2-420b-49a1-a89e-fc345541c91b',
   inputs: [
