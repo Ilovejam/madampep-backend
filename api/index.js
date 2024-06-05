@@ -116,53 +116,53 @@ app.post('/api/message', async (req, res) => {
     }
   });
 
-app.post('/api/short-message', async (req, res) => {
-  try {
-    if (!db) throw new Error('No database connection');
-    
-    const { deviceId, inputs } = req.body;
-    console.log('Received user inputs:', inputs);
-
-    const collection = db.collection('userData');
-    const previousData = await collection.findOne({ deviceId: deviceId });
-    const combinedInputs = [...(previousData?.inputs || []), ...inputs];
-
-    const birthDateInput = combinedInputs.find(input => input.question === 'Doğum Tarihi');
-    let userZodiac = '';
-    if (birthDateInput) {
-      const [day, month] = birthDateInput.answer.split('.').map(Number);
-      userZodiac = getZodiacSign(day, month);
-    }
-
-    const userMessageContent = combinedInputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4-turbo',
-        messages: [
-          { role: 'system', content: 'Senin adın MadamPep ve sen kısa ve net cevaplar veren bir kahve falcısısın.' },
-          { role: 'user', content: userMessageContent },
-        ],
-        max_tokens: 50
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
-        },
+  app.post('/api/short-message', async (req, res) => {
+    try {
+      if (!db) throw new Error('No database connection');
+      
+      const { deviceId, inputs } = req.body;
+      console.log('Received user inputs:', inputs);
+  
+      const collection = db.collection('userData');
+      const previousData = await collection.findOne({ deviceId: deviceId });
+      const combinedInputs = [...(previousData?.inputs || []), ...inputs];
+  
+      const birthDateInput = combinedInputs.find(input => input.question === 'Doğum Tarihi');
+      let userZodiac = '';
+      if (birthDateInput) {
+        const [day, month] = birthDateInput.answer.split('.').map(Number);
+        userZodiac = getZodiacSign(day, month);
       }
-    );
-
-    const reply = response.data.choices[0].message.content;
-    console.log('AI response:', reply);
-
-    res.json({ message: reply });
-  } catch (error) {
-    console.error('Error sending chat request:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
+  
+      const userMessageContent = combinedInputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
+  
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4-turbo',
+          messages: [
+            { role: 'system', content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kısa ve net cevaplar ver.' },
+            { role: 'user', content: userMessageContent },
+          ],
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`,
+          },
+        }
+      );
+  
+      const reply = response.data.choices[0].message.content;
+      console.log('AI response:', reply);
+  
+      res.json({ message: reply });
+    } catch (error) {
+      console.error('Error sending chat request:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
 
 app.get('/api/profile', async (req, res) => {
   try {
