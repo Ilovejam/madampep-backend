@@ -119,12 +119,13 @@ app.post('/api/message', async (req, res) => {
   app.post('/api/short-message', async (req, res) => {
     try {
       if (!db) throw new Error('No database connection');
-      
+  
       const { deviceId, inputs } = req.body;
       console.log('Received user inputs:', inputs);
   
       const collection = db.collection('userData');
       const previousData = await collection.findOne({ deviceId: deviceId });
+  
       const combinedInputs = [...(previousData?.inputs || []), ...inputs];
   
       const birthDateInput = combinedInputs.find(input => input.question === 'Doğum Tarihi');
@@ -136,14 +137,18 @@ app.post('/api/message', async (req, res) => {
   
       const userMessageContent = combinedInputs.map(input => `${input.question}: ${input.answer}`).join('\n') + `\nBurç: ${userZodiac}`;
   
+      const messages = [
+        { role: 'system', content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kullanıcıların önceki girdilerini ve fal çıktısını hatırlayarak, kısa ve net cevaplar ver. Cevaplarında tekrar merhaba deme.' },
+        { role: 'user', content: userMessageContent },
+        ...previousData?.falCiktisi ? [{ role: 'assistant', content: previousData.falCiktisi }] : [],
+        { role: 'user', content: inputs.map(input => input.answer).join('\n') }
+      ];
+  
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
           model: 'gpt-4-turbo',
-          messages: [
-            { role: 'system', content: 'Senin adın MadamPep ve sen bir kahve falcısısın. Kısa ve net cevaplar ver.' },
-            { role: 'user', content: userMessageContent },
-          ],
+          messages: messages,
         },
         {
           headers: {
